@@ -1,0 +1,8 @@
+[database]
+server = "127.0.0.1"
+ports = [ 3306 ]
+dbname = "guguday"
+dbuser = "guguday"
+dbpasswd = "guguday"
+connection_max = 5000
+enabled = true

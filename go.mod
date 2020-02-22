@@ -1,6 +1,7 @@
 module guguday
 
 require (
-	github.com/yanzay/tbot v1.0.0 // indirect
+	github.com/BurntSushi/toml v0.3.1
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/yanzay/tbot/v2 v2.1.0
 )
