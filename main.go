@@ -41,7 +41,7 @@ func main() {
 		}
 	})
 
-	bot.HandleMessage("/testtesttest", func(message *tbot.Message) {
+	bot.HandleMessage("/setmine", func(message *tbot.Message) {
 		app.votingHandler(message, message.From)
 	})
 
@@ -54,23 +54,23 @@ func main() {
 			if result.Uid != 0 {
 				if result.Role == "1" {
 					msg, _ := c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。", tbot.OptReplyToMessageID(message.ReplyToMessage.MessageID))
-					time.Sleep(7 * time.Second)
+					time.Sleep(10 * time.Second)
 					_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 				} else if result.Role == "0" {
 					msg, _ := c.SendMessage(message.Chat.ID, "他是站街女惹，一晚接八个那种。", tbot.OptReplyToMessageID(message.ReplyToMessage.MessageID))
-					time.Sleep(7 * time.Second)
+					time.Sleep(10 * time.Second)
 					_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 				}
 			} else {
 				msg, _ := c.SendMessage(message.Chat.ID, fmt.Sprintf("我没有他的数据惹，快快来补充吧 [ %s ](tg://user?id= %d )",
 					wantedUser.FirstName, wantedUser.ID), tbot.OptReplyToMessageID(message.ReplyToMessage.MessageID), tbot.OptParseModeMarkdown)
-				time.Sleep(7 * time.Second)
+				time.Sleep(10 * time.Second)
 				_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 			}
 		} else {
 			msg, _ := c.SendMessage(message.Chat.ID, "要查哪个就直接回复他的消息，并使用命令\"/checkinfo\", 不要手贱瞎点。",
 				tbot.OptReplyToMessageID(message.MessageID))
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 			_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 		}
 	})
@@ -101,7 +101,9 @@ func main() {
 			}
 		}
 	})
+
 	err := bot.Start()
+
 	if err != nil {
 		log.Fatal(err)
 	}
