@@ -34,7 +34,11 @@ func main() {
 	app.client = bot.Client()
 	bot.HandleCallback(app.callbackHandler)
 	bot.HandleMessage("/start", func(m *tbot.Message) {
-		c.SendMessage(m.Chat.ID, "我是骚鸡，请把我拉进你的群，我会咕咕Day!")
+		if m.Chat.Type == "supergroup" {
+			return
+		} else if m.Chat.Type == "private" {
+			c.SendMessage(m.Chat.ID, "我是骚鸡，请把我拉进你的群，我会咕咕Day!")
+		}
 	})
 
 	bot.HandleMessage("/testtesttest", func(message *tbot.Message) {
@@ -49,21 +53,52 @@ func main() {
 			result := Module.SelectUserInfo(DB, cmd)
 			if result.Uid != 0 {
 				if result.Role == "1" {
-					c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。")
+					msg, _ := c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。", tbot.OptReplyToMessageID(message.ReplyToMessage.MessageID))
+					time.Sleep(7 * time.Second)
+					_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 				} else if result.Role == "0" {
-					c.SendMessage(message.Chat.ID, "他是站街女惹，一晚接八个那种。")
+					msg, _ := c.SendMessage(message.Chat.ID, "他是站街女惹，一晚接八个那种。", tbot.OptReplyToMessageID(message.ReplyToMessage.MessageID))
+					time.Sleep(7 * time.Second)
+					_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 				}
 			} else {
-				c.SendMessage(message.Chat.ID, "我没有他的数据惹，快快来补充吧 @"+wantedUser.Username)
+				msg, _ := c.SendMessage(message.Chat.ID, fmt.Sprintf("我没有他的数据惹，快快来补充吧 [ %s ](tg://user?id= %d )",
+					wantedUser.FirstName, wantedUser.ID), tbot.OptReplyToMessageID(message.ReplyToMessage.MessageID), tbot.OptParseModeMarkdown)
+				time.Sleep(7 * time.Second)
+				_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 			}
+		} else {
+			msg, _ := c.SendMessage(message.Chat.ID, "要查哪个就直接回复他的消息，并使用命令\"/checkinfo\", 不要手贱瞎点。",
+				tbot.OptReplyToMessageID(message.MessageID))
+			time.Sleep(5 * time.Second)
+			_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 		}
 	})
 
 	bot.HandleMessage(".*", func(message *tbot.Message) {
 		if message.NewChatMembers != nil {
 			newuser := message.NewChatMembers[0]
-			c.SendMessage(message.Chat.ID, "欢迎新骚鸡进群。\n来，大家热烈欢迎 @"+newuser.Username)
-			app.votingHandler(message, newuser)
+			if !newuser.IsBot {
+				cmd := fmt.Sprintf("SELECT * FROM `whore_info` WHERE `whore_uid` = '%d';",
+					newuser.ID)
+				result := Module.SelectUserInfo(DB, cmd)
+				_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新骚鸡进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d )",
+					newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
+				if result.Uid != 0 {
+					if result.Role == "1" {
+						msg, _ := c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。")
+						time.Sleep(7 * time.Second)
+						_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
+					} else if result.Role == "0" {
+						msg, _ := c.SendMessage(message.Chat.ID, "他是站街女惹，一晚接八个那种。")
+						time.Sleep(7 * time.Second)
+						_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
+					}
+				} else {
+					app.votingHandler(message, newuser)
+				}
+
+			}
 		}
 	})
 	err := bot.Start()
@@ -72,10 +107,12 @@ func main() {
 	}
 }
 
-func (a *application) votingHandler(m *tbot.Message, newuser *tbot.User) {
+func (a *application) votingHandler(m *tbot.Message, newUser *tbot.User) {
 	buttons := makeButtons()
-	checkMap[newuser.ID] = false
-	msg, _ := a.client.SendMessage(m.Chat.ID, "你是1还是0？这个世界上没有0.5！", tbot.OptInlineKeyboardMarkup(buttons))
+	checkMap[newUser.ID] = false
+	msg, _ := a.client.SendMessage(m.Chat.ID, "你是1还是0？这个世界上没有0.5！",
+		tbot.OptInlineKeyboardMarkup(buttons),
+		tbot.OptReplyToMessageID(m.MessageID))
 	votingID := fmt.Sprintf("%s:%d", m.Chat.ID, msg.MessageID)
 	a.votings[votingID] = &voting{}
 }
@@ -91,12 +128,12 @@ func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
 				//如果执行失败，返回信息
 				insertResult, _ := Module.InserttoDB(DB, cmd)
 				if !insertResult {
-					a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("数据保存失败，请与我私聊重试。"))
+					_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("数据保存失败，请与我私聊重试。"))
 				}
-				a.client.EditMessageText(cq.Message.Chat.ID, cq.Message.MessageID, "天惹！老公！快给我们康康鸡儿~~~")
-				a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
-				time.Sleep(20 * time.Second)
-				a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+				_, _ = a.client.EditMessageText(cq.Message.Chat.ID, cq.Message.MessageID, "天惹！老公！快给我们康康鸡儿~~~")
+				_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
+				time.Sleep(10 * time.Second)
+				_ = a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 			}
 			if cq.Data == "bottom" {
 				cmd := fmt.Sprintf("INSERT INTO `whore_info` (`whore_uid`, `whore_age`, `whore_role`, `whore_height`, `whore_bodytype`, `whore_size` ) VALUES ('%d', 'null', '%s', 'null', 'null', 'null') ON DUPLICATE KEY UPDATE whore_role=0;",
@@ -104,16 +141,16 @@ func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
 				//如果执行失败，返回信息
 				insertResult, _ := Module.InserttoDB(DB, cmd)
 				if !insertResult {
-					a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("数据保存失败，请与我私聊重试。"))
+					_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("数据保存失败，请与我私聊重试。"))
 				}
-				a.client.EditMessageText(cq.Message.Chat.ID, cq.Message.MessageID, "姐妹！快给我们康康菊~~~")
-				a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
-				time.Sleep(20 * time.Second)
-				a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+				_, _ = a.client.EditMessageText(cq.Message.Chat.ID, cq.Message.MessageID, "姐妹！快给我们康康菊~~~")
+				_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
+				time.Sleep(10 * time.Second)
+				_ = a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 			}
 			if cq.Data == "moreinfo" {
-				a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
-				a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
+				_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
+				_ = a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 			}
 		}
 	}
