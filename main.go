@@ -3,11 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/yanzay/tbot/v2"
 	"guguday/Module"
 	"log"
 	"os"
 	"time"
+
+	"github.com/yanzay/tbot/v2"
 )
 
 type application struct {
@@ -82,16 +83,21 @@ func main() {
 				cmd := fmt.Sprintf("SELECT * FROM `whore_info` WHERE `whore_uid` = '%d';",
 					newuser.ID)
 				result := Module.SelectUserInfo(DB, cmd)
-				_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新骚鸡进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d )",
-					newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
+				if message.Chat.Username == "shuaishugay" {
+					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新爸爸进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d )",
+						newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
+				} else {
+					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新骚鸡进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d )",
+						newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
+				}
 				if result.Uid != 0 {
 					if result.Role == "1" {
 						msg, _ := c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。")
-						time.Sleep(7 * time.Second)
+						time.Sleep(10 * time.Second)
 						_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 					} else if result.Role == "0" {
 						msg, _ := c.SendMessage(message.Chat.ID, "他是站街女惹，一晚接八个那种。")
-						time.Sleep(7 * time.Second)
+						time.Sleep(10 * time.Second)
 						_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 					}
 				} else {
