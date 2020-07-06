@@ -84,7 +84,7 @@ func main() {
 					newuser.ID)
 				result := Module.SelectUserInfo(DB, cmd)
 				if message.Chat.Username == "shuaishugay" {
-					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新爸爸进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d) \n \n ⚠️新人必看，不遵守必踢👿 \n \n 🌟新人进群必须发至少1部相关视频或照片，没有发的截止到每天晚上六点，一律踢出，昨日踢了150人！\n \n 🌟本群只可发熟年和各类大叔帅叔资源，其余请移步总群：@worldsaojigay",
+					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新爸爸进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d) \n \n ⚠️新人必看，不遵守必踢👿 \n \n 🌟新人进群必须发至少1部熟年帅叔视频或照片，1️⃣小时之内没有发的，自动踢出，昨日踢了150人！\n \n 🌟本群只可发熟年和各类大叔帅叔资源，其余请移步总群：@worldsaojigay",
 						newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
 				} else {
 					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新骚鸡进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d )",
