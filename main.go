@@ -112,7 +112,7 @@ func main() {
 		}
 	})
 
-	bot.HandleMessage("/welcome .+ ", func(message *tbot.Message) {
+	bot.HandleMessage("/welcome.*", func(message *tbot.Message) {
 
 		if message.Chat.Type == "private" {
 			//check user is admin or not
