@@ -14,3 +14,9 @@ type UserInfo struct {
 	Bodytype   string
 	Size       string
 }
+
+type WelcomeMessage struct {
+	Group_username string
+	Group_welcome  string
+	Ask_role       int
+}

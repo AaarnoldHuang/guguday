@@ -3,10 +3,11 @@ package Module
 import (
 	"database/sql"
 	"fmt"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var dbinfo = fmt.Sprintf("%s:%s@/%s?charset=utf8", Config().DB.DBuser, Config().DB.DBpasswd, Config().DB.DBname)
+var dbinfo = fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&collation=utf8mb4_unicode_ci", Config().DB.DBuser, Config().DB.DBpasswd, Config().DB.DBname)
 
 func ConnectDB() *sql.DB {
 	db, err := sql.Open("mysql", dbinfo)
@@ -56,6 +57,28 @@ func SelectUserInfo(db *sql.DB, cmd string) UserInfo {
 		checkErr(err)
 	}
 	return userInfo
+}
+
+func SelectAdminInfo(db *sql.DB, cmd string) AdminInfo {
+	rows, err := db.Query(cmd)
+	checkErr(err)
+	var adminInfo AdminInfo
+	for rows.Next() {
+		err = rows.Scan(&adminInfo.Admin_id, &adminInfo.Admin_uid)
+		checkErr(err)
+	}
+	return adminInfo
+}
+
+func SelectWelcome(db *sql.DB, cmd string) WelcomeMessage {
+	rows, err := db.Query(cmd)
+	checkErr(err)
+	var welcomeMessage WelcomeMessage
+	for rows.Next() {
+		err = rows.Scan(&welcomeMessage.Group_username, &welcomeMessage.Group_welcome, &welcomeMessage.Ask_role)
+		checkErr(err)
+	}
+	return welcomeMessage
 }
 
 func checkErr(err error) {

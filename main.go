@@ -6,6 +6,8 @@ import (
 	"guguday/Module"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/yanzay/tbot/v2"
@@ -23,6 +25,8 @@ type voting struct {
 var tempid int
 var DB *sql.DB
 var checkMap map[int]bool
+var tempWelcome string
+var tempGroupUsername string
 
 func main() {
 	DB = Module.ConnectDB()
@@ -76,6 +80,75 @@ func main() {
 		}
 	})
 
+	bot.HandleMessage("/setwelcome .+", func(message *tbot.Message) {
+
+		if message.Chat.Type == "private" {
+			//check user is admin or not
+			cmd := fmt.Sprintf("SELECT * FROM `admin_info` where `admin_uid` = '%d';", message.From.ID)
+			result := Module.SelectAdminInfo(DB, cmd)
+			if result.Admin_uid == strconv.Itoa(message.From.ID) {
+				text := strings.TrimPrefix(message.Text, "/setwelcome ")
+				_, _ = c.SendMessage(message.Chat.ID, "你要设置的群组是 @"+text+" ，对吗?")
+				_, _ = c.SendMessage(message.Chat.ID, "如果不对，请重新发送，如果对的话请回复 /welcome +欢迎语。例子如下:")
+				_, _ = c.SendMessage(message.Chat.ID, "/welcome 欢迎加入群聊。")
+				tempGroupUsername = text
+			}
+		}
+	})
+
+	bot.HandleMessage("/setaskrole .+", func(message *tbot.Message) {
+
+		if message.Chat.Type == "private" {
+			//check user is admin or not
+			cmd := fmt.Sprintf("SELECT * FROM `admin_info` where `admin_uid` = '%d';", message.From.ID)
+			result := Module.SelectAdminInfo(DB, cmd)
+			if result.Admin_uid == strconv.Itoa(message.From.ID) {
+				text := strings.TrimPrefix(message.Text, "/setaskrole ")
+				_, _ = c.SendMessage(message.Chat.ID, "你要设置的群组是 @"+text+" ，对吗?")
+				_, _ = c.SendMessage(message.Chat.ID, "如果不对，请重新发送，如果对的话请选择:")
+				tempGroupUsername = text
+				app.changeAskRoleHandler(message)
+			}
+		}
+	})
+
+	bot.HandleMessage("/welcome .+ ", func(message *tbot.Message) {
+
+		if message.Chat.Type == "private" {
+			//check user is admin or not
+			cmd := fmt.Sprintf("SELECT * FROM `admin_info` where `admin_uid` = '%d';", message.From.ID)
+			result := Module.SelectAdminInfo(DB, cmd)
+			if result.Admin_uid == strconv.Itoa(message.From.ID) {
+				text := strings.TrimPrefix(message.Text, "/welcome ")
+				_, _ = c.SendMessage(message.Chat.ID, "欢迎词将会变为如下信息:")
+				_, _ = c.SendMessage(message.Chat.ID, text)
+				_, _ = c.SendMessage(message.Chat.ID, "确定请回复 /Done")
+				tempWelcome = text
+			}
+		}
+	})
+
+	bot.HandleMessage("/Done", func(message *tbot.Message) {
+		if message.Chat.Type == "private" {
+			//check user is admin or not
+			cmd := fmt.Sprintf("SELECT * FROM `admin_info` where `admin_uid` = '%d';", message.From.ID)
+			result := Module.SelectAdminInfo(DB, cmd)
+			if result.Admin_uid == strconv.Itoa(message.From.ID) {
+				cmd := fmt.Sprintf("INSERT INTO `welcome_message` (`group_username`, `group_welcome`) VALUES ('%s','%s') ON DUPLICATE KEY UPDATE group_welcome='%s';",
+					tempGroupUsername, tempWelcome, tempWelcome)
+
+				fmt.Println(cmd)
+				//如果执行失败，返回信息
+				insertResult, _ := Module.InserttoDB(DB, cmd)
+				if !insertResult {
+					_, _ = c.SendMessage(message.Chat.ID, "数据保存失败，请重试。")
+				}
+				_, _ = c.SendMessage(message.Chat.ID, "好了!")
+
+			}
+		}
+	})
+
 	bot.HandleMessage(".*", func(message *tbot.Message) {
 		if message.NewChatMembers != nil {
 			newuser := message.NewChatMembers[0]
@@ -83,13 +156,29 @@ func main() {
 				cmd := fmt.Sprintf("SELECT * FROM `whore_info` WHERE `whore_uid` = '%d';",
 					newuser.ID)
 				result := Module.SelectUserInfo(DB, cmd)
-				if message.Chat.Username == "shuaishugay" {
-					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新爸爸进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d) \n \n ⚠️新人必看，不遵守必踢👿 \n \n 🌟新人进群必须发至少1部熟年帅叔视频或照片，1️⃣小时之内没有发的，自动踢出，昨日踢了150人！\n \n 🌟本群只可发熟年和各类大叔帅叔资源，其余请移步总群：@worldsaojigay",
-						newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
-				} else {
-					_, _ = c.SendMessage(message.Chat.ID, fmt.Sprintf("欢迎新骚鸡进群。\n来，大家热烈欢迎 [ %s ](tg://user?id= %d )",
-						newuser.FirstName, newuser.ID), tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
 
+				cmd2 := fmt.Sprintf("SELECT * FROM `welcome_message` WHERE `group_username` = '%s';", message.Chat.Username)
+				welcome := Module.SelectWelcome(DB, cmd2)
+
+				//有设置欢迎词
+				if welcome.Group_welcome != "" {
+					_, _ = c.SendMessage(message.Chat.ID, welcome.Group_welcome, tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
+					if welcome.Ask_role == 1 {
+						if result.Uid != 0 {
+							if result.Role == "1" {
+								msg, _ := c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。")
+								time.Sleep(10 * time.Second)
+								_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
+							} else if result.Role == "0" {
+								msg, _ := c.SendMessage(message.Chat.ID, "他是站街女惹，一晚接八个那种。")
+								time.Sleep(10 * time.Second)
+								_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
+							}
+						} else {
+							app.votingHandler(message, newuser)
+						}
+					}
+				} else {
 					if result.Uid != 0 {
 						if result.Role == "1" {
 							msg, _ := c.SendMessage(message.Chat.ID, "他是大猛1惹，假1罚石那种。")
@@ -104,7 +193,7 @@ func main() {
 						app.votingHandler(message, newuser)
 					}
 				}
-
+				//没有设置欢迎词，默认开启鸡叫模式
 			}
 		}
 	})
@@ -120,6 +209,16 @@ func (a *application) votingHandler(m *tbot.Message, newUser *tbot.User) {
 	buttons := makeButtons()
 	checkMap[newUser.ID] = false
 	msg, _ := a.client.SendMessage(m.Chat.ID, "你是1还是0？这个世界上没有0.5！",
+		tbot.OptInlineKeyboardMarkup(buttons),
+		tbot.OptReplyToMessageID(m.MessageID))
+	votingID := fmt.Sprintf("%s:%d", m.Chat.ID, msg.MessageID)
+	a.votings[votingID] = &voting{}
+}
+
+func (a *application) changeAskRoleHandler(m *tbot.Message) {
+	buttons := askRoleButtons()
+	checkMap[m.From.ID] = false
+	msg, _ := a.client.SendMessage(m.Chat.ID, "请选择:",
 		tbot.OptInlineKeyboardMarkup(buttons),
 		tbot.OptReplyToMessageID(m.MessageID))
 	votingID := fmt.Sprintf("%s:%d", m.Chat.ID, msg.MessageID)
@@ -161,6 +260,27 @@ func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
 				_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("如果你想补充更多信息，请与我私聊。"))
 				_ = a.client.DeleteMessage(cq.Message.Chat.ID, cq.Message.MessageID)
 			}
+			if cq.Data == "1" {
+				cmd := fmt.Sprintf("UPDATE `welcome_message` SET `ask_role`='1' WHERE `group_username`='%s';",
+					tempGroupUsername)
+				//如果执行失败，返回信息
+				insertResult, _ := Module.InserttoDB(DB, cmd)
+				if !insertResult {
+					_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("数据保存失败，请重试。"))
+				}
+				_, _ = a.client.EditMessageText(cq.Message.Chat.ID, cq.Message.MessageID, "好了!")
+
+			}
+			if cq.Data == "0" {
+				cmd := fmt.Sprintf("UPDATE `welcome_message` SET `ask_role`='0' WHERE `group_username`='%s';",
+					tempGroupUsername)
+				//如果执行失败，返回信息
+				insertResult, _ := Module.InserttoDB(DB, cmd)
+				if !insertResult {
+					_ = a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("数据保存失败，请重试。"))
+				}
+				_, _ = a.client.EditMessageText(cq.Message.Chat.ID, cq.Message.MessageID, "好了!")
+			}
 		}
 	}
 }
@@ -186,6 +306,23 @@ func makeButtons() *tbot.InlineKeyboardMarkup {
 	return &tbot.InlineKeyboardMarkup{
 		InlineKeyboard: [][]tbot.InlineKeyboardButton{
 			[]tbot.InlineKeyboardButton{button1, button2, button3},
+		},
+	}
+}
+
+func askRoleButtons() *tbot.InlineKeyboardMarkup {
+	button1 := tbot.InlineKeyboardButton{
+		Text:         fmt.Sprintf("问"),
+		CallbackData: "1",
+	}
+	button2 := tbot.InlineKeyboardButton{
+		Text:         fmt.Sprintf("不问"),
+		CallbackData: "0",
+	}
+
+	return &tbot.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tbot.InlineKeyboardButton{
+			[]tbot.InlineKeyboardButton{button1, button2},
 		},
 	}
 }
