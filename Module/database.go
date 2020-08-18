@@ -3,6 +3,7 @@ package Module
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -12,8 +13,9 @@ var dbinfo = fmt.Sprintf("%s:%s@/%s?charset=utf8mb4&collation=utf8mb4_unicode_ci
 func ConnectDB() *sql.DB {
 	db, err := sql.Open("mysql", dbinfo)
 	checkErr(err)
-	db.SetMaxOpenConns(5000) //用于设置最大打开的连接数，默认值为0表示不限制。
-	db.SetMaxIdleConns(10)   //用于设置闲置的连接数。
+	db.SetMaxOpenConns(10) //用于设置最大打开的连接数，默认值为0表示不限制。
+	db.SetMaxIdleConns(10) //用于设置闲置的连接数。
+	db.SetConnMaxLifetime(time.Second * 30)
 	err = db.Ping()
 	checkErr(err)
 	fmt.Println("Connected!")

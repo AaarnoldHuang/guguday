@@ -162,7 +162,7 @@ func main() {
 
 				//有设置欢迎词
 				if welcome.Group_welcome != "" {
-					_, _ = c.SendMessage(message.Chat.ID, welcome.Group_welcome, tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
+					msg, _ := c.SendMessage(message.Chat.ID, welcome.Group_welcome, tbot.OptReplyToMessageID(message.MessageID), tbot.OptParseModeMarkdown)
 					if welcome.Ask_role == 1 {
 						if result.Uid != 0 {
 							if result.Role == "1" {
@@ -178,6 +178,8 @@ func main() {
 							app.votingHandler(message, newuser)
 						}
 					}
+					time.Sleep(30 * time.Second)
+					_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 				} else {
 					if result.Uid != 0 {
 						if result.Role == "1" {
