@@ -178,7 +178,7 @@ func main() {
 							app.votingHandler(message, newuser)
 						}
 					}
-					time.Sleep(30 * time.Second)
+					time.Sleep(time.Second * 300)
 					_ = c.DeleteMessage(message.Chat.ID, msg.MessageID)
 				} else {
 					if result.Uid != 0 {
